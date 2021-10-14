@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+
+  nginx_webdav:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./webdav_data:/webdav_data
+    environment:
+      USERNAME: $USERNAME
+      PASSWORD: $PASSWORD
