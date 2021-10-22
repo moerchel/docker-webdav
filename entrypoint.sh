@@ -9,3 +9,5 @@ else
         sed -i 's%auth_basic "Restricted";% %g' /etc/nginx/conf.d/default.conf
         sed -i 's%auth_basic_user_file /etc/nginx/htpasswd;% %g' /etc/nginx/conf.d/default.conf
 fi
+
+service cron start
