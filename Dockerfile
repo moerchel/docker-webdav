@@ -1,4 +1,4 @@
-FROM nginx:latest
+FROM nginx:stable-bookworm
 
 LABEL maintainer="moerchel"
 
