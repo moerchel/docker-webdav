@@ -1,22 +1,37 @@
-FROM nginx:stable-bookworm
+# Deliberately the current Debian stable release, see README "Available image tags"
+FROM debian:stable-slim
 
-LABEL maintainer="moerchel"
+LABEL org.opencontainers.image.title="docker-webdav" \
+      org.opencontainers.image.description="WebDAV server on nginx" \
+      org.opencontainers.image.source="https://github.com/moerchel/docker-webdav" \
+      org.opencontainers.image.licenses="MIT"
 
-RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y logrotate nginx-extras apache2-utils
+# "apt-get upgrade" pulls in updates published since the base image was built.
+# hadolint ignore=DL3005,DL3008
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+         nginx \
+         libnginx-mod-http-dav-ext \
+         libnginx-mod-http-headers-more-filter \
+         apache2-utils \
+         logrotate \
+    && rm -rf /var/lib/apt/lists/* /etc/nginx/sites-enabled/* /etc/logrotate.d/nginx \
+    && mkdir -p /etc/nginx/webdav /media/data /media/logs \
+    && chown www-data:www-data /media/data
 
-COPY nginx_logrotate /etc/logrotate.d/
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY webdav.conf /etc/nginx/conf.d/webdav.conf
+COPY logrotate.conf /etc/logrotate.d/webdav
+COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 
-COPY nginx_webdav.conf /etc/nginx/conf.d/default.conf
-RUN rm /etc/nginx/sites-enabled/*
+VOLUME ["/media/data", "/media/logs"]
+EXPOSE 80
 
-RUN mkdir -p "/media/data"
-RUN chown -R www-data:www-data "/media/data"
-VOLUME /media/data
+HEALTHCHECK --interval=60s --timeout=10s --start-period=10s --retries=3 \
+  CMD ["/usr/local/bin/healthcheck.sh"]
 
-RUN mkdir -p "/media/logs"
-RUN chown -R www-data:www-data "/media/logs"
-VOLUME /media/logs
-
-COPY entrypoint.sh /
-RUN chmod +x entrypoint.sh
-CMD /entrypoint.sh && nginx -g "daemon off;"
+# SIGQUIT lets nginx finish running requests (e.g. uploads) before it stops
+STOPSIGNAL SIGQUIT
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

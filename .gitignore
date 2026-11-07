@@ -1,1 +1,3 @@
-.dccache
+docker-compose/.env
+docker-compose/data/
+docker-compose/logs/
