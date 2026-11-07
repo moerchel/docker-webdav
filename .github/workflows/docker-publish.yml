@@ -177,12 +177,17 @@ jobs:
           EVENT: ${{ github.event_name }}
           REF: ${{ github.ref }}
         run: |
-          # Expanded by dpkg-query inside the image, not by this shell
+          # Installed packages as "name<TAB>version"; ${Package} and
+          # ${Version} are dpkg-query fields, not shell variables
           # shellcheck disable=SC2016
-          list='dpkg-query -W -f=${Package}\t${Version}\n'
-          docker run --rm --entrypoint sh docker-webdav:scan -c "$list" | sort > new.txt
+          packages() {
+            docker run --rm --platform linux/amd64 --entrypoint dpkg-query "$1" \
+              -W -f='${Package}\t${Version}\n' | sort
+          }
+          packages docker-webdav:scan > new.txt
+          test -s new.txt
           if docker pull -q --platform linux/amd64 "$PUBLISHED" >/dev/null 2>&1; then
-            docker run --rm --platform linux/amd64 --entrypoint sh "$PUBLISHED" -c "$list" | sort > old.txt
+            packages "$PUBLISHED" > old.txt
           else
             : > old.txt
           fi
