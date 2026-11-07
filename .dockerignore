@@ -1,0 +1,6 @@
+*
+!entrypoint.sh
+!healthcheck.sh
+!nginx.conf
+!webdav.conf
+!logrotate.conf
